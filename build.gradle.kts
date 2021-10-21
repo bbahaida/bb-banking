@@ -6,6 +6,7 @@ plugins {
 	kotlin("jvm") version "1.5.31"
 	kotlin("plugin.spring") version "1.5.31"
 	kotlin("plugin.jpa") version "1.5.31"
+	id("com.google.cloud.tools.jib") version "2.7.1"
 }
 
 group = "com.github.bbahaida"
@@ -20,7 +21,43 @@ configurations {
 
 repositories {
 	mavenCentral()
+	jcenter()
 }
+val buildNumber by extra("0")
+jib {
+	to {
+		image = "bbahaida/bb-banking"
+		tags = setOf("$version", "$version.${extra["buildNumber"]}")
+		auth {
+			username = System.getenv("DOCKERHUB_USERNAME")
+			password = System.getenv("DOCKERHUB_PASSWORD")
+		}
+	}
+	container {
+		labels = mapOf(
+			"maintainer" to "Brahim Bahaida <brahim.bahaida@gmail.com>",
+			"org.opencontainers.image.title" to "bb-banking",
+			"org.opencontainers.image.description" to "A banking platform",
+			"org.opencontainers.image.version" to "$version",
+			"org.opencontainers.image.authors" to "Brahim Bahaida <brahim.bahaida@gmail.com>",
+			"org.opencontainers.image.url" to "https://github.com/bbahaida/bb-banking",
+			"org.opencontainers.image.licenses" to "MIT"
+		)
+		jvmFlags = listOf(
+			"-server",
+			"-Djava.awt.headless=true",
+			"-XX:InitialRAMFraction=2",
+			"-XX:MinRAMFraction=2",
+			"-XX:MaxRAMFraction=2",
+			"-XX:+UseG1GC",
+			"-XX:MaxGCPauseMillis=100",
+			"-XX:+UseStringDeduplication"
+		)
+		workingDirectory = "/app"
+		ports = listOf("8080")
+	}
+}
+
 
 dependencies {
 	/*implementation("org.springframework.boot:spring-boot-starter-data-elasticsearch")
